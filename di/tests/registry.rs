@@ -1,31 +1,45 @@
-use std::any::Any;
-
 use di::error::{Error, ErrorCode};
 use di::registry::Registry;
 use di::registry::APPLICATION;
 use di::service::Service;
+
+use std::any::TypeId;
+
+use traitcast::Castable;
+use traitcast::TraitObject;
+use traitcast::VTable;
+use traitcast_derive::Castable;
+
 trait SimpleService: Service {
-    fn foo(&self);
+    fn foo(&self) -> bool;
 }
+#[derive(Castable)]
+#[Traits(SimpleService)]
 struct SimpleServiceImpl {}
 impl SimpleServiceImpl {
-    pub fn factory() -> Box<dyn Service + Send> {
+    pub fn factory() -> Box<dyn Castable> {
         Box::new(SimpleServiceImpl {})
     }
 }
 impl SimpleService for SimpleServiceImpl {
-    fn foo(&self) {}
+    fn foo(&self) -> bool {
+        return true;
+    }
 }
 impl Service for SimpleServiceImpl {}
 
+#[derive(Castable)]
+#[Traits(SimpleService)]
 struct AnotherSimpleServiceImpl {}
 impl AnotherSimpleServiceImpl {
-    pub fn factory() -> Box<dyn Service + Send> {
+    pub fn factory() -> Box<dyn Castable> {
         Box::new(AnotherSimpleServiceImpl {})
     }
 }
 impl SimpleService for AnotherSimpleServiceImpl {
-    fn foo(&self) {}
+    fn foo(&self) -> bool {
+        false
+    }
 }
 impl Service for AnotherSimpleServiceImpl {}
 
@@ -73,19 +87,17 @@ fn create_an_application_service() {
     assert_eq!(service.is_ok(), true);
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
+
 #[test]
 fn cast_a_service() {
-    let test = SimpleServiceImpl {};
-
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
     let service = Registry::get_service::<dyn SimpleService>(&APPLICATION);
     assert_eq!(service.is_ok(), true);
 
     let service = service.unwrap().clone();
-    let mut service = service.lock().unwrap();
-    let service: &mut dyn Any = unsafe { service.as_mut() as &mut dyn Any };
-    //let service = service.downcast_mut::<dyn SimpleService>();
-    //let service = unsafe { &mut *(*service as *mut dyn Any as *mut dyn SimpleService) };
-
+    let service = service.lock().unwrap();
+    let service = service.query_ref::<dyn SimpleService>(); //.query_ref::<dyn SimpleService>();
+    assert_eq!(service.is_some(), true);
+    assert_eq!(service.unwrap().foo(), true);
     Registry::unregister_service::<dyn SimpleService>().ok();
 }

@@ -16,7 +16,7 @@ pub struct TraitObject {
 }
 
 /// trait casting
-pub trait Castable {
+pub trait Castable: Send {
     fn query_vtable(&self, id: TypeId) -> Option<VTable>;
 }
 /// Implementation of the cast

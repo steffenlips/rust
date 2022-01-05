@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
+use traitcast::Castable;
 
 use crate::error::{Error, ErrorCode};
 use crate::service::{Service, ServiceFactory};
@@ -31,7 +32,7 @@ static SESSION_COUNTER: AtomicU32 = AtomicU32::new(1);
 pub static APPLICATION: Session = Session::default();
 pub struct Registry {
     registered_service_factories: HashMap<String, ServiceFactory>,
-    available_sessions: HashMap<u32, HashMap<String, Arc<Mutex<Box<dyn Service + Send>>>>>,
+    available_sessions: HashMap<u32, HashMap<String, Arc<Mutex<Box<dyn Castable>>>>>,
 }
 
 impl Registry {
@@ -89,7 +90,7 @@ impl Registry {
 
     pub fn get_service<Impl: Service + ?Sized>(
         session: &Session,
-    ) -> Result<Arc<Mutex<Box<dyn Service + Send>>>, Error> {
+    ) -> Result<Arc<Mutex<Box<dyn Castable>>>, Error> {
         let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
             Err(Error::new(
                 ErrorCode::Uninitialized,
@@ -113,7 +114,7 @@ impl Registry {
         &mut self,
         session: &Session,
         service_name: &String,
-    ) -> Result<&Arc<Mutex<Box<dyn Service + Send>>>, Error> {
+    ) -> Result<&Arc<Mutex<Box<dyn Castable>>>, Error> {
         let session_services = self
             .available_sessions
             .get_mut(&session.id())
