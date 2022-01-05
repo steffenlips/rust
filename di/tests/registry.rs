@@ -12,6 +12,7 @@ use traitcast_derive::Castable;
 
 trait SimpleService: Service {
     fn foo(&self) -> bool;
+    fn bar(&mut self) -> bool;
 }
 #[derive(Castable)]
 #[Traits(SimpleService)]
@@ -23,6 +24,10 @@ impl SimpleServiceImpl {
 }
 impl SimpleService for SimpleServiceImpl {
     fn foo(&self) -> bool {
+        return true;
+    }
+
+    fn bar(&mut self) -> bool {
         return true;
     }
 }
@@ -38,6 +43,10 @@ impl AnotherSimpleServiceImpl {
 }
 impl SimpleService for AnotherSimpleServiceImpl {
     fn foo(&self) -> bool {
+        false
+    }
+
+    fn bar(&mut self) -> bool {
         false
     }
 }
@@ -87,7 +96,6 @@ fn create_an_application_service() {
     assert_eq!(service.is_ok(), true);
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
-
 #[test]
 fn cast_a_service() {
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
@@ -96,8 +104,21 @@ fn cast_a_service() {
 
     let service = service.unwrap().clone();
     let service = service.lock().unwrap();
-    let service = service.query_ref::<dyn SimpleService>(); //.query_ref::<dyn SimpleService>();
+    let service = service.as_ref().query_ref::<dyn SimpleService>();
     assert_eq!(service.is_some(), true);
     assert_eq!(service.unwrap().foo(), true);
+    Registry::unregister_service::<dyn SimpleService>().ok();
+}
+#[test]
+fn cast_a_mutable_service() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
+    let service = Registry::get_service::<dyn SimpleService>(&APPLICATION);
+    assert_eq!(service.is_ok(), true);
+
+    let service = service.unwrap().clone();
+    let mut service = service.lock().unwrap();
+    let service = service.as_mut().query_mut::<dyn SimpleService>();
+    assert_eq!(service.is_some(), true);
+    assert_eq!(service.unwrap().bar(), true);
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
