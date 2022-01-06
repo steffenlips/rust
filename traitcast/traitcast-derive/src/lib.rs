@@ -22,7 +22,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                             let token = quote!(
                                 else if id == ::std::any::TypeId::of::<dyn #iface>() {
                                     let x = ::std::ptr::null::<#struct_type>() as *const dyn #iface;
-                                    let vt = unsafe { ::std::mem::transmute::<_, TraitObject>(x).vtable };
+                                    let vt = unsafe { ::std::mem::transmute::<_, traitcast::TraitObject>(x).vtable };
                                     return Some(vt);
                                 }
                             );
@@ -40,10 +40,10 @@ pub fn derive(input: TokenStream) -> TokenStream {
     });
 
     let output = quote! {
-        impl Castable for #struct_type {
-            fn query_vtable(&self, id: TypeId) -> Option<VTable> {
+        impl traitcast::Castable for #struct_type {
+            fn query_vtable(&self, id: ::std::any::TypeId) -> Option<traitcast::VTable> {
                 if id == ::std::any::TypeId::of::<#struct_type>() {
-                    return Some(VTable::none());
+                    return Some(traitcast::VTable::none());
                 }
                 #ifaces
                 else {

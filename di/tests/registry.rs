@@ -3,11 +3,7 @@ use di::registry::Registry;
 use di::registry::APPLICATION;
 use di::service::Service;
 
-use std::any::TypeId;
-
 use traitcast::Castable;
-use traitcast::TraitObject;
-use traitcast::VTable;
 use traitcast_derive::Castable;
 
 trait SimpleService: Service {

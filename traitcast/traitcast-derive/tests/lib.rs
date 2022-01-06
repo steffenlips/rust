@@ -5,11 +5,6 @@ use syn::Meta;
 use syn::NestedMeta;
 
 use quote::quote;
-use std::any::TypeId;
-
-use traitcast::Castable;
-use traitcast::TraitObject;
-use traitcast::VTable;
 use traitcast_derive::Castable;
 
 trait Service {}
