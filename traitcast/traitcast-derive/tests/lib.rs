@@ -56,12 +56,7 @@ fn parser() {
         Some(ident) => match ident.to_string().as_str() {
             "Traits" => match attr.parse_meta().unwrap() {
                 Meta::List(list) => list.nested.iter().for_each(|data| match data {
-                    /*NestedMeta::Lit(lit) => {
-                        (match lit {
-                            Lit::Str(str) => println!("{}", str.value()),
-                            _ => panic!("[derivce(Callable)]: Unsupported nested meta lit type"),
-                        })
-                    }*/
+       
                     NestedMeta::Meta(meta) => match meta {
                         Meta::Path(path) => {
                             let iface = path

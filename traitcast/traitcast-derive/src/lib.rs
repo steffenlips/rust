@@ -28,11 +28,11 @@ pub fn derive(input: TokenStream) -> TokenStream {
                             );
                             ifaces = quote!(#ifaces #token);
                         }
-                        _ => (),
+                        _ => panic!("[derivce(Callable)]: Unsupported nested meta meta type"),
                     },
-                    _ => (),
+                    _ => panic!("[derivce(Callable)]: Unsupported nested meta type"),
                 }),
-                _ => (),
+                _ => panic!("[derivce(Callable)]: Unsupported meta type"),
             },
             x => panic!("[derivce(Callable)]: Unsupported attribute: {}", x),
         },
