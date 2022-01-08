@@ -1,5 +1,5 @@
 use di::error::{Error, ErrorCode};
-use di::registry::Registry;
+use di::registry::{Registry, SimpleSession};
 use proc_macro2::Ident;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -57,10 +57,19 @@ fn func_ref(explicit_param: u32, injected_param: &dyn SimpleService) -> u32 {
     explicit_param + injected_param.foo()
 }
 
-//#[inject(injected_param)]
-//fn func_mut(explicit_param: u32, injected_param: &mut dyn SimpleService) -> u32 {
-//    explicit_param + injected_param.bar()
-//}
+#[inject(injected_param)]
+fn func_mut(explicit_param: u32, injected_param: &mut dyn SimpleService) -> u32 {
+    explicit_param + injected_param.bar()
+}
+
+#[inject(injected_param)]
+fn func_session(
+    explicit_param: u32,
+    #[session] session: &dyn Session,
+    injected_param: &dyn SimpleService,
+) -> u32 {
+    explicit_param + injected_param.foo()
+}
 
 struct Args {
     pub vars: HashSet<Ident>,
@@ -96,7 +105,7 @@ fn parse_attribute_stream() {
 }
 #[test]
 fn parse_function_stream() {
-    let s = "fn func_ref(explicit_param: u32, injected_param: &dyn SimpleService) -> u32 {
+    let s = "fn func_ref(explicit_param: u32, #[session] session: u32, injected_param: &dyn SimpleService) -> u32 {
         explicit_param + injected_param.foo()
     }
     ";
@@ -114,21 +123,21 @@ fn parse_function_stream() {
                 }
                 FnArg::Typed(typ) => {
                     let str = match typ.ty.as_ref() {
-                        Type::Array(TypeArray) => String::from("TypeArray"),
-                        Type::BareFn(TypeBareFn) => String::from("TypeBareFn"),
-                        Type::Group(TypeGroup) => String::from("TypeGroup"),
-                        Type::ImplTrait(TypeImplTrait) => String::from("TypeImplTrait"),
-                        Type::Infer(TypeInfer) => String::from("TypeInfer"),
-                        Type::Macro(TypeMacro) => String::from("TypeMacro"),
-                        Type::Never(TypeNever) => String::from("TypeNever"),
-                        Type::Paren(TypeParen) => String::from("TypeParen"),
-                        Type::Path(TypePath) => TypePath.path.get_ident().unwrap().to_string(),
-                        Type::Ptr(TypePtr) => String::from("TypePtr"),
-                        Type::Reference(TypeReference) => String::from("TypeReference"),
-                        Type::Slice(TypeSlice) => String::from("TypeSlice"),
-                        Type::TraitObject(TypeTraitObject) => String::from("TypeTraitObject"),
-                        Type::Tuple(TypeTuple) => String::from("TypeTuple"),
-                        Type::Verbatim(TokenStream) => String::from("TokenStream"),
+                        Type::Array(_) => String::from("TypeArray"),
+                        Type::BareFn(_) => String::from("TypeBareFn"),
+                        Type::Group(_) => String::from("TypeGroup"),
+                        Type::ImplTrait(_) => String::from("TypeImplTrait"),
+                        Type::Infer(_) => String::from("TypeInfer"),
+                        Type::Macro(_) => String::from("TypeMacro"),
+                        Type::Never(_) => String::from("TypeNever"),
+                        Type::Paren(_) => String::from("TypeParen"),
+                        Type::Path(type_path) => type_path.path.get_ident().unwrap().to_string(),
+                        Type::Ptr(_) => String::from("TypePtr"),
+                        Type::Reference(_) => String::from("TypeReference"),
+                        Type::Slice(_) => String::from("TypeSlice"),
+                        Type::TraitObject(_) => String::from("TypeTraitObject"),
+                        Type::Tuple(_) => String::from("TypeTuple"),
+                        Type::Verbatim(_) => String::from("TokenStream"),
                         _ => panic!("[inject(parameter)]: Unsupported ty type"),
                     };
                     println!("{}", str);
@@ -136,7 +145,7 @@ fn parse_function_stream() {
             });
             match func.sig.output {
                 ReturnType::Default => println!("-> void"),
-                ReturnType::Type(a, b) => println!("{}", b.to_token_stream().to_string()),
+                ReturnType::Type(_a, b) => println!("{}", b.to_token_stream().to_string()),
             }
         }
         _ => panic!("[inject(parameter)]: Macro only implemented for functions"),
@@ -150,11 +159,23 @@ fn injects_non_existing_service_as_reference() {
         Err(Error::new(ErrorCode::UnregisteredService, ""))
     );
 }
-
-/*#[test]
+#[test]
 fn injects_existing_service_as_reference() {
-    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory);
-    assert_eq!(func_ref_injected(1), Ok(1));
-    Registry::unregister_service::<dyn SimpleService>(SimpleServiceImpl::factory);
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    assert_eq!(func_ref(1), Ok(1));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
 }
-*/
+#[test]
+fn injects_existing_service_as_mutable() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    assert_eq!(func_mut(1), Ok(2));
+    assert_eq!(func_mut(1), Ok(3));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+}
+#[test]
+fn injects_existing_service_as_reference_with_session() {
+    let session = SimpleSession::new();
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    assert_eq!(func_session(1, &session), Ok(1));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+}
