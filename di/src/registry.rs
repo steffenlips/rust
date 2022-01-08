@@ -91,7 +91,7 @@ impl Registry {
         Ok(())
     }
 
-    pub fn get_service<Impl: Service + ?Sized>(
+    pub fn get_service<Impl: 'static + Service + ?Sized>(
         session: &dyn Session,
     ) -> Result<Arc<Mutex<Box<dyn Castable>>>, Error> {
         let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
@@ -109,11 +109,11 @@ impl Registry {
 
         let name = std::any::type_name::<Impl>().to_string();
 
-        let service_instance = registry.get_session_service(session, &name)?;
+        let service_instance = registry.get_session_service::<Impl>(session, &name)?;
 
         Ok(service_instance.clone())
     }
-    fn get_session_service(
+    fn get_session_service<Impl: 'static + Service + ?Sized>(
         &mut self,
         session: &dyn Session,
         service_name: &String,
@@ -143,7 +143,12 @@ impl Registry {
                     )
                 })?;
 
-            let service_instance = factory();
+            let mut service_instance = factory();
+            match service_instance.as_mut().query_mut::<Impl>() {
+                Some(service) => service.initialize(),
+                None => (),
+            }
+
             session_services.insert(
                 service_name.to_string(),
                 Arc::new(Mutex::new(service_instance)),

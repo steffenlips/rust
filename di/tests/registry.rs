@@ -22,6 +22,12 @@ impl SimpleServiceImpl {
         Box::new(SimpleServiceImpl { counter: 0 })
     }
 }
+
+impl Drop for SimpleServiceImpl {
+    fn drop(&mut self) {
+        println!("service uninitialized!")
+    }
+}
 impl SimpleService for SimpleServiceImpl {
     fn foo(&self) -> bool {
         return true;
@@ -33,7 +39,11 @@ impl SimpleService for SimpleServiceImpl {
         res
     }
 }
-impl Service for SimpleServiceImpl {}
+impl Service for SimpleServiceImpl {
+    fn initialize(&mut self) {
+        println!("service initialized!")
+    }
+}
 
 #[derive(Castable)]
 #[Traits(SimpleService)]
