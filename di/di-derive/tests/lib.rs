@@ -52,16 +52,45 @@ impl SimpleService for SimpleServiceImpl {
 }
 impl Service for SimpleServiceImpl {}
 
+#[derive(Castable)]
+#[Traits(SampleService)]
+struct SampleServiceImpl {}
+impl SampleServiceImpl {
+    pub fn factory() -> Box<dyn Castable> {
+        Box::new(SampleServiceImpl {})
+    }
+}
+impl SampleService for SampleServiceImpl {
+    fn foo(&self) -> u32 {
+        100
+    }
+}
+impl Service for SampleServiceImpl {}
+
 #[inject(injected_param)]
 fn func_ref(explicit_param: u32, injected_param: &dyn SimpleService) -> u32 {
     explicit_param + injected_param.foo()
 }
-
+#[inject(injected_param, injected_param2)]
+fn func_ref_with_two(
+    explicit_param: u32,
+    injected_param: &dyn SimpleService,
+    injected_param2: &dyn SampleService,
+) -> u32 {
+    explicit_param + injected_param.foo() + injected_param2.foo()
+}
 #[inject(injected_param)]
 fn func_mut(explicit_param: u32, injected_param: &mut dyn SimpleService) -> u32 {
     explicit_param + injected_param.bar()
 }
-
+#[inject(injected_param, injected_param2)]
+fn func_mut_with_two(
+    explicit_param: u32,
+    injected_param: &mut dyn SimpleService,
+    injected_param2: &dyn SampleService,
+) -> u32 {
+    explicit_param + injected_param.bar() + injected_param2.foo()
+}
 #[inject(injected_param)]
 fn func_session(
     explicit_param: u32,
@@ -166,11 +195,27 @@ fn injects_existing_service_as_reference() {
     Registry::unregister_service::<dyn SimpleService>().unwrap();
 }
 #[test]
+fn injects_two_existing_service_as_reference() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    Registry::register_service::<dyn SampleService>(SampleServiceImpl::factory).unwrap();
+    assert_eq!(func_ref_with_two(1), Ok(101));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+    Registry::unregister_service::<dyn SampleService>().unwrap();
+}
+#[test]
 fn injects_existing_service_as_mutable() {
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
     assert_eq!(func_mut(1), Ok(2));
     assert_eq!(func_mut(1), Ok(3));
     Registry::unregister_service::<dyn SimpleService>().unwrap();
+}
+#[test]
+fn injects_two_existing_service_as_mutable() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    Registry::register_service::<dyn SampleService>(SampleServiceImpl::factory).unwrap();
+    assert_eq!(func_mut_with_two(1), Ok(102));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+    Registry::unregister_service::<dyn SampleService>().unwrap();
 }
 #[test]
 fn injects_existing_service_as_reference_with_session() {
