@@ -22,7 +22,7 @@ fn func_trigger_event(event_bus: &mut dyn common::EventBusService) {
 #[test]
 fn trigger_event() {
     common::setup();
-    func_trigger_event();
+    func_trigger_event().unwrap();
     common::teardown();
 }
 #[test]

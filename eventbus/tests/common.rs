@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use di::{registry::Registry, service::Service};
 use eventbus::{
     error::Error,
@@ -26,6 +28,20 @@ impl EventBusDefaultMock {
         EventBusDefaultMock {
             0: EventBusDefault::new(),
         }
+    }
+}
+
+impl Deref for EventBusDefaultMock {
+    type Target = EventBusDefault;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for EventBusDefaultMock {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

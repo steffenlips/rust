@@ -25,8 +25,6 @@ trait Subscriber<T: Event> {
 ///
 pub trait Event {}
 
-//#[derive(Castable)]
-//#[Traits(EventBus)]
 pub struct EventBusDefault {}
 impl EventBusDefault {
     pub fn new() -> EventBusDefault {
