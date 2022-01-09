@@ -82,12 +82,12 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
                     } else if typref.is_some() {                  
                     
                         let typref = typref.unwrap();
-                        let elem = &typref.elem;
+                        let elem = &typref.elem; 
                         let mutability = typref.mutability;
 
                         let as_ptr = match mutability {
-                            Some(_) => quote!(#param_name.as_mut().query_mut::<#elem>().ok_or_else(|| Error::new(ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
-                            None => quote!(#param_name.as_ref().query_ref::<#elem>().ok_or_else(|| Error::new(ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
+                            Some(_) => quote!(#param_name.as_mut().query_mut::<#elem>().ok_or_else(|| di::error::Error::new(di::error::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
+                            None => quote!(#param_name.as_ref().query_ref::<#elem>().ok_or_else(|| di::error::Error::new(di::error::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
                         };
 
 
@@ -110,7 +110,7 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
             let visibility = func.vis.to_token_stream();
             let name = func.sig.ident;
             let output = match func.sig.output {
-                ReturnType::Default => quote!(),
+                ReturnType::Default => quote!(()),
                 ReturnType::Type(_a, b) => b.to_token_stream(),
             };
             function_signature = quote! {
@@ -129,7 +129,7 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    //println!("{}", output.to_string().as_str());
+    println!("{}", output.to_string().as_str());
     output.into()
     //quote!().into()
 }

@@ -71,6 +71,10 @@ impl Service for SampleServiceImpl {}
 fn func_ref(explicit_param: u32, injected_param: &dyn SimpleService) -> u32 {
     explicit_param + injected_param.foo()
 }
+#[inject(injected_param)]
+fn func_no_params(injected_param: &dyn SimpleService) -> u32 {
+    injected_param.foo()
+}
 #[inject(injected_param, injected_param2)]
 fn func_ref_with_two(
     explicit_param: u32,
@@ -192,6 +196,13 @@ fn injects_non_existing_service_as_reference() {
 fn injects_existing_service_as_reference() {
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
     assert_eq!(func_ref(1), Ok(1));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+}
+#[test]
+
+fn injects_existing_service_as_reference_no_params() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    assert_eq!(func_no_params(), Ok(0));
     Registry::unregister_service::<dyn SimpleService>().unwrap();
 }
 #[test]
