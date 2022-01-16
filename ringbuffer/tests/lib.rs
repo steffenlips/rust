@@ -40,4 +40,19 @@ fn push_two_different_and_consume() {
     assert_eq!(*ring_buffer.consume::<u8>().unwrap(), 16);
     assert_eq!(*ring_buffer.consume::<u16>().unwrap(), 300);
 }
-
+#[test]
+fn push_and_consume_over_bounds() {
+    let mut ring_buffer = VariableSizeRingBuffer::new(3);
+    {
+        let entry = ring_buffer.push_entry::<u16>();
+        let entry = entry.unwrap();
+        *entry = 300;
+        assert_eq!(*ring_buffer.consume::<u16>().unwrap(), 300);
+    }
+    {
+        let entry = ring_buffer.push_entry::<u16>();
+        let entry = entry.unwrap();
+        *entry = 16000;
+        assert_eq!(*ring_buffer.consume::<u16>().unwrap(), 16000);
+    }
+}
