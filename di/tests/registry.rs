@@ -1,9 +1,10 @@
 use std::thread;
 use std::time::Duration;
 
-use di::error::{Error, ErrorCode};
-use di::registry::{Registry, SimpleSession};
+use di::registry::{ErrorCode, Registry, SimpleSession};
 use di::service::Service;
+
+use error::Error;
 
 use traitcast::Castable;
 use traitcast_derive::Castable;
@@ -68,7 +69,7 @@ impl Service for AnotherSimpleServiceImpl {}
 fn get_unregistered_service() {
     assert_eq!(
         Registry::get_service::<dyn SimpleService>(&SimpleSession::default()).err(),
-        Some(Error::new(ErrorCode::UnregisteredService, ""))
+        Some(Error::<ErrorCode>::new(ErrorCode::UnregisteredService, ""))
     );
 }
 
@@ -109,29 +110,47 @@ fn create_an_application_service() {
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
 #[test]
+fn remove_session() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
+    {
+        let service = Registry::get_service::<dyn SimpleService>(&SimpleSession::default());
+        assert_eq!(service.is_ok(), true);
+    }
+    assert_eq!(
+        Registry::clear_session(&SimpleSession::default()).is_ok(),
+        true
+    );
+
+    Registry::unregister_service::<dyn SimpleService>().ok();
+}
+#[test]
 fn cast_a_service() {
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
-    let service = Registry::get_service::<dyn SimpleService>(&SimpleSession::default());
-    assert_eq!(service.is_ok(), true);
+    {
+        let service = Registry::get_service::<dyn SimpleService>(&SimpleSession::default());
+        assert_eq!(service.is_ok(), true);
 
-    let service = service.unwrap().clone();
-    let service = service.lock().unwrap();
-    let service = service.as_ref().query_ref::<dyn SimpleService>();
-    assert_eq!(service.is_some(), true);
-    assert_eq!(service.unwrap().foo(), true);
+        let service = service.unwrap().clone();
+        let service = service.lock().unwrap();
+        let service = service.as_ref().query_ref::<dyn SimpleService>();
+        assert_eq!(service.is_some(), true);
+        assert_eq!(service.unwrap().foo(), true);
+    }
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
 #[test]
 fn cast_a_mutable_service() {
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).ok();
-    let service = Registry::get_service::<dyn SimpleService>(&SimpleSession::default());
-    assert_eq!(service.is_ok(), true);
+    {
+        let service = Registry::get_service::<dyn SimpleService>(&SimpleSession::default());
+        assert_eq!(service.is_ok(), true);
 
-    let service = service.unwrap().clone();
-    let mut service = service.lock().unwrap();
-    let service = service.as_mut().query_mut::<dyn SimpleService>();
-    assert_eq!(service.is_some(), true);
-    assert_eq!(service.unwrap().bar(), 0);
+        let service = service.unwrap().clone();
+        let mut service = service.lock().unwrap();
+        let service = service.as_mut().query_mut::<dyn SimpleService>();
+        assert_eq!(service.is_some(), true);
+        assert_eq!(service.unwrap().bar(), 0);
+    }
     Registry::unregister_service::<dyn SimpleService>().ok();
 }
 #[test]

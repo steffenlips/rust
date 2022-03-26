@@ -1,12 +1,24 @@
+use error::Error;
+use log::error;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-
-use once_cell::sync::Lazy;
 use traitcast::Castable;
 
-use crate::error::{Error, ErrorCode};
 use crate::service::{Service, ServiceFactory};
+
+#[derive(PartialEq, Debug)]
+pub enum ErrorCode {
+    Uninitialized,
+    UnregisteredService,
+    AlreadyRegisteredService,
+    CouldNotCreateSessionService,
+    CouldNotGetSessionService,
+    CouldNotUninitialize,
+    Unimplemented,
+    ServiceError,
+}
 
 pub trait Session {
     fn key(&self) -> u32;
@@ -48,9 +60,9 @@ impl Registry {
 
     pub fn register_service<Impl: Service + ?Sized>(
         prototype: ServiceFactory,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<ErrorCode>> {
         let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
-            Err(Error::new(
+            Err(Error::<ErrorCode>::new(
                 ErrorCode::Uninitialized,
                 format!("Di container not initialized: {}", err).as_str(),
             ))
@@ -72,9 +84,9 @@ impl Registry {
         Ok(())
     }
 
-    pub fn unregister_service<Impl: Service + ?Sized>() -> Result<(), Error> {
+    pub fn unregister_service<Impl: Service + ?Sized>() -> Result<(), Error<ErrorCode>> {
         let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
-            Err(Error::new(
+            Err(Error::<ErrorCode>::new(
                 ErrorCode::Uninitialized,
                 format!("Di container not initialized: {}", err).as_str(),
             ))
@@ -85,17 +97,35 @@ impl Registry {
         registry.registered_service_factories.remove(&name);
 
         registry.available_sessions.iter_mut().for_each(|map| {
-            map.1.remove(&name);
+            let service = map.1.remove(&name);
+            if service.is_some() {
+                Registry::unitialize_service(&service.unwrap(), name.as_str());
+            }
         });
 
         Ok(())
     }
 
+    pub fn clear_session(session: &dyn Session) -> Result<(), Error<ErrorCode>> {
+        let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
+            Err(Error::<ErrorCode>::new(
+                ErrorCode::Uninitialized,
+                format!("Di container not initialized: {}", err).as_str(),
+            ))
+        })?;
+
+        let session = registry.available_sessions.remove(&session.key());
+        if session.is_some() {
+            registry.uninitialize_services_of_session(session.unwrap());
+        }
+        Ok(())
+    }
+
     pub fn get_service<Impl: 'static + Service + ?Sized>(
         session: &dyn Session,
-    ) -> Result<Arc<Mutex<Box<dyn Castable>>>, Error> {
+    ) -> Result<Arc<Mutex<Box<dyn Castable>>>, Error<ErrorCode>> {
         let registry = &mut REGISTRY_INSTANCE.lock().or_else(|err| {
-            Err(Error::new(
+            Err(Error::<ErrorCode>::new(
                 ErrorCode::Uninitialized,
                 format!("Di container not initialized: {}", err).as_str(),
             ))
@@ -117,12 +147,12 @@ impl Registry {
         &mut self,
         session: &dyn Session,
         service_name: &String,
-    ) -> Result<&Arc<Mutex<Box<dyn Castable>>>, Error> {
+    ) -> Result<&Arc<Mutex<Box<dyn Castable>>>, Error<ErrorCode>> {
         let session_services =
             self.available_sessions
                 .get_mut(&session.key())
                 .ok_or_else(|| {
-                    Error::new(
+                    Error::<ErrorCode>::new(
                         ErrorCode::CouldNotCreateSessionService,
                         format!(
                             "Could not create session service for session {}",
@@ -156,7 +186,7 @@ impl Registry {
         }
 
         let service_instance = session_services.get(service_name).ok_or_else(|| {
-            Error::new(
+            Error::<ErrorCode>::new(
                 ErrorCode::CouldNotCreateSessionService,
                 format!(
                     "Could not create session service for session {}",
@@ -167,6 +197,27 @@ impl Registry {
         })?;
 
         Ok(service_instance)
+    }
+
+    fn uninitialize_services_of_session(
+        &self,
+        session: HashMap<String, Arc<Mutex<Box<dyn Castable>>>>,
+    ) {
+        session
+            .iter()
+            .for_each(|service| Registry::unitialize_service(service.1, service.0));
+    }
+
+    fn unitialize_service(service: &Arc<Mutex<Box<dyn Castable>>>, name: &str) {
+        match service.lock() {
+            Ok(mut guard) => match guard.query_mut::<dyn Service>() {
+                Some(service) => service.uninitialize(),
+                None => error!(target: "di", "Could not uninitialize service {}", name),
+            },
+            Err(err) => {
+                error!(target: "di", "Could not uninitialize service {} ({})", name, err)
+            }
+        }
     }
 }
 

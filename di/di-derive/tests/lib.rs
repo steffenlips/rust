@@ -1,5 +1,6 @@
-use di::error::{Error, ErrorCode};
-use di::registry::{Registry, SimpleSession};
+use di::registry::{ErrorCode, Registry, SimpleSession};
+use di::service::Service;
+use error::Error;
 use proc_macro2::Ident;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -15,11 +16,10 @@ use syn::Result;
 use syn::ReturnType;
 use syn::Token;
 use syn::Type;
-
-use di::service::Service;
-use di_derive::inject;
 use traitcast::Castable;
 use traitcast_derive::Castable;
+
+use di_derive::inject;
 
 trait SimpleService: Service {
     fn foo(&self) -> u32;
@@ -104,6 +104,11 @@ fn func_session(
     explicit_param + injected_param.foo()
 }
 
+#[inject(injected_param)]
+fn func_generic<T>(explicit_param: T, injected_param: &mut dyn SimpleService) -> T {
+    explicit_param
+}
+
 struct Args {
     pub vars: HashSet<Ident>,
 }
@@ -138,7 +143,7 @@ fn parse_attribute_stream() {
 }
 #[test]
 fn parse_function_stream() {
-    let s = "fn func_ref(explicit_param: u32, #[session] session: u32, injected_param: &dyn SimpleService) -> u32 {
+    let s = "fn func_ref<T>(explicit_param: T, #[session] session: u32, injected_param: &dyn SimpleService) -> Option<&u32> {
         explicit_param + injected_param.foo()
     }
     ";
@@ -233,5 +238,11 @@ fn injects_existing_service_as_reference_with_session() {
     let session = SimpleSession::new();
     Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
     assert_eq!(func_session(1, &session), Ok(1));
+    Registry::unregister_service::<dyn SimpleService>().unwrap();
+}
+#[test]
+fn injects_existing_service_as_generic() {
+    Registry::register_service::<dyn SimpleService>(SimpleServiceImpl::factory).unwrap();
+    assert_eq!(func_generic(1), Ok(1));
     Registry::unregister_service::<dyn SimpleService>().unwrap();
 }

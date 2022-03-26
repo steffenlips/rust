@@ -1,0 +1,23 @@
+[package]
+name = "websocket-lite-impl"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+websocket-lite = { version = "0.5.0", features = ["ssl-native-tls"] }
+#
+url = "2.2.2"
+log = "0.4.14"
+tokio = { version = "1", features = ["net", "rt", "rt-multi-thread"] }
+tokio-util = "0.7.0"
+futures = "0.3.19"
+
+error = { path = "../../error" }
+websocket = { path = ".." }
+traitcast = { path = "../../traitcast" }
+traitcast-derive = { path = "../../traitcast/traitcast-derive" }
+
+[dev-dependencies]
+condvar = { path = "../../condvar" }

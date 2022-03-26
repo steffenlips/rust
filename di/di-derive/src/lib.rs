@@ -86,8 +86,8 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
                         let mutability = typref.mutability;
 
                         let as_ptr = match mutability {
-                            Some(_) => quote!(#param_name.as_mut().query_mut::<#elem>().ok_or_else(|| di::error::Error::new(di::error::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
-                            None => quote!(#param_name.as_ref().query_ref::<#elem>().ok_or_else(|| di::error::Error::new(di::error::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
+                            Some(_) => quote!(#param_name.as_mut().query_mut::<#elem>().ok_or_else(|| ::error::Error::new(::di::registry::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
+                            None => quote!(#param_name.as_ref().query_ref::<#elem>().ok_or_else(|| ::error::Error::new(::di::registry::ErrorCode::Unimplemented, format!("Service of type {} not implemented", stringify!(#elem)).as_str()))?;),
                         };
 
 
@@ -104,17 +104,18 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
             
             injected_args.vars.iter().for_each(|arg| {
                 //Diagnostic::new(Level::Warning, format!("unused injected parameter {}", arg.to_string()));
-                panic!("unused injected parameter {}", arg.to_string());
+                panic!("unused injected parameter {}", arg.to_string()); 
             });
 
             let visibility = func.vis.to_token_stream();
             let name = func.sig.ident;
+            let generics = func.sig.generics;
             let output = match func.sig.output {
                 ReturnType::Default => quote!(()),
                 ReturnType::Type(_a, b) => b.to_token_stream(),
             };
             function_signature = quote! {
-                #visibility fn #name (#parameter) -> std::result::Result<#output, di::error::Error>
+                #visibility fn #name #generics (#parameter) -> std::result::Result<#output, ::error::Error<::di::registry::ErrorCode>>
             };
             function_block = func.block.to_token_stream();
         }
@@ -129,7 +130,7 @@ pub fn inject(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    println!("{}", output.to_string().as_str());
+    //println!("{}", output.to_string().as_str());
     output.into()
     //quote!().into()
 }

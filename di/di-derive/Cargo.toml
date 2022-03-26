@@ -9,12 +9,13 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-syn = {version="1.0.84",features=["full"]}
-quote = "1.0.8"
+syn = {version="1.0.86",features=["full"]}
+quote = "1.0.15"
 
 
 [dev-dependencies]
 proc-macro2 = "1.0.36"
+error = { path = "../../error" }
 di = { path = ".."}
 traitcast =  { path = "../../traitcast" }
 traitcast-derive= { path = "../../traitcast/traitcast-derive" }

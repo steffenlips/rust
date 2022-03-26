@@ -1,10 +1,7 @@
-use std::ops::{Deref, DerefMut};
-
 use di::{registry::Registry, service::Service};
-use eventbus::{
-    error::Error,
-    event::{Event, EventBus, EventBusDefault},
-};
+use error::Error;
+use eventbus::event::{ErrorCode, Event, EventBus, EventBusDefault};
+use std::ops::{Deref, DerefMut};
 use traitcast::Castable;
 use traitcast_derive::Castable;
 
@@ -15,7 +12,7 @@ struct EventBusDefaultMock(EventBusDefault);
 pub trait EventBusService: EventBus + Service {}
 impl EventBusDefaultMock {}
 impl EventBus for EventBusDefaultMock {
-    fn trigger_event(&mut self, event: Box<dyn Event>) -> Result<(), Error> {
+    fn trigger_event(&mut self, event: Box<dyn Event>) -> Result<(), Error<ErrorCode>> {
         EventBusDefault::trigger_event(&mut self.0, event)
     }
 }
