@@ -13,16 +13,17 @@ impl SimpleEvent {
 }
 impl Event for SimpleEvent {}
 
-//#[inject(event_bus)]
+#[inject(event_bus)]
 fn func_trigger_event(event_bus: &mut dyn common::EventBusService) {
     let event = SimpleEvent::new(1);
-    //assert_eq!(event_bus.trigger_event(Box::new(event)), Ok(()));
+    let res = event_bus.trigger_event(Box::new(event));
+    assert!(res.is_ok());
 }
 
 #[test]
 fn trigger_event() {
     common::setup();
-    //func_trigger_event().unwrap();
+    func_trigger_event().unwrap();
     common::teardown();
 }
 #[test]
