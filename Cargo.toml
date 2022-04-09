@@ -1,5 +1,5 @@
 [workspace]
 
 members = ["traitcast", "traitcast/traitcast-derive", "di", "di/di-derive", 
-"ringbuffer", "eventbus", "db", "condvar", "error", "state_machine", 
+"ringbuffer", "eventbus", "db", "db/db-rusqlite-derive", "condvar", "error", "state_machine", 
 "state_machine/state_machine-macro", "websocket", "websocket/websocket-lite-impl"]

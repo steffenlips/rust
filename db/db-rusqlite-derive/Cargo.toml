@@ -1,11 +1,17 @@
 [package]
-name = "db"
+name = "db-rusqlite-derive"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
+[lib]
+proc-macro = true
 
-[dev-dependencies]
+[dependencies]
+db = { path =".."}
+
 rusqlite = { version = "0.27.0", features = ["bundled"] }
+syn = {version="1.0.86",features=["full"]}
+quote = "1.0.15"
+

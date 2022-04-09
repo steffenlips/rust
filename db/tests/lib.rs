@@ -1,5 +1,6 @@
 use std::any::Any;
 
+use db::Create;
 use rusqlite::Connection;
 
 mod common;
@@ -23,6 +24,27 @@ impl Person {
         //
         Err("Not implemented".to_string())
     }
+}
+
+impl Create<Connection> for Person {
+    fn create(context: &Connection) -> Result<(), String> {
+        context
+            .execute(
+                "CREATE TABLE person (
+                    id    INTEGER PRIMARY KEY,
+                    name  TEXT NOT NULL,
+                    password  TEXT
+                )",
+                [],
+            )
+            .unwrap();
+        Ok(())
+    }
+}
+#[test]
+fn create_trait() {
+    let conn = Connection::open_in_memory().unwrap();
+    Person::create(&conn).unwrap();
 }
 
 #[test]

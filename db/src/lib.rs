@@ -1,15 +1,11 @@
-use std::{marker::PhantomData, rc::Rc};
-
-pub trait Context {}
-
 ///////////////////////////////////////////////////////////////////////////////
 /// Trait Create
 /// creates the SQL string for table creation
 /// If the table has indexed columns it creates the index sql, too
-pub trait Create {
-    fn create(context: &dyn Context) -> Result<(), String>;
+pub trait Create<DbContext> {
+    fn create(context: &DbContext) -> Result<(), String>;
 }
-
+/*
 ///////////////////////////////////////////////////////////////////////////////
 /// Trait Drop
 pub trait Drop {
@@ -43,3 +39,4 @@ pub trait Query<'a, DAO> {
 pub trait Update<DAO> {
     fn update(context: &dyn Context, dao: &DAO) -> Result<(), String>;
 }
+ */
