@@ -5,17 +5,20 @@
 pub trait Create<DbContext> {
     fn create(context: &DbContext) -> Result<(), String>;
 }
-/*
 ///////////////////////////////////////////////////////////////////////////////
 /// Trait Drop
-pub trait Drop {
-    fn drop(context: &dyn Context) -> Result<(), String>;
+pub trait Drop<DbContext> {
+    fn drop(context: &DbContext) -> Result<(), String>;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 /// Trait InsertTable
-pub trait Insert<DAO> {
-    fn insert(context: &dyn Context, dao: &DAO) -> Result<(), String>;
+pub trait Insert<DbContext> {
+    fn insert(&mut self, context: &DbContext) -> Result<(), String>;
+}
+/*///////////////////////////////////////////////////////////////////////////////
+/// Trait InsertTable
+pub trait Query<DbContext> {
+    fn query_one(context: &DbContext) -> Result<(), String>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
